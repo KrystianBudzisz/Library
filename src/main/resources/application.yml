@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: Library
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: krystianbudzisz1@gmail.com
+    password: tffg zjkv auye juoq
+    properties.mail.smtp:
+      auth: true
+      starttls.enable: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+server:
+  port: 8080
+
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:/data.sql
+      schema-locations: classpath:/schema.sql
