@@ -9,6 +9,7 @@ import com.example.test.exception.DatabaseException;
 import com.example.test.exception.DuplicateResourceException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,21 +32,25 @@ public class BookService {
 
     @Transactional
     public BookDTO addBook(CreateBookCommand command) {
+
         Book newBook = bookMapper.fromCreateCommand(command);
         newBook.setAddedDate(LocalDate.now());
 
         try {
-
             newBook = bookRepository.save(newBook);
-            return bookMapper.toDTO(newBook);
-        } catch (DataIntegrityViolationException dive) {
-
-            throw new DuplicateResourceException("A book with this author and title already exists.");
-        } catch (Exception e) {
-
-            throw new DatabaseException("An error occurred while trying to save the book");
+        } catch (DataIntegrityViolationException ex) {
+            Throwable rootCause = ex.getMostSpecificCause();
+            if (rootCause instanceof ConstraintViolationException) {
+                ConstraintViolationException cve = (ConstraintViolationException) rootCause;
+                if ("uk_author_title".equals(cve.getConstraintName())) {
+                    throw new DuplicateResourceException("A book with this author and title already exists.");
+                }
+            }
+            throw new DatabaseException("An error occurred while trying to save the book", ex);
         }
 
+        return bookMapper.toDTO(newBook);
     }
+
 
 }

@@ -33,3 +33,8 @@ server:
       mode: always
       data-locations: classpath:/data.sql
       schema-locations: classpath:/schema.sql
+
+      app:
+        base-url: http://localhost:8080
+
+

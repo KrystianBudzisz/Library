@@ -20,14 +20,14 @@ public class BookController {
     private final BookService bookService;
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping("/add")
+    @PostMapping
     public ResponseEntity<BookDTO> addBook(@Valid @RequestBody CreateBookCommand command) {
         BookDTO addedBook = bookService.addBook(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(addedBook);
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<Page<BookDTO>> getAllBooks(
             @PageableDefault(page = 0, size = 10) Pageable pageable) {
         Page<BookDTO> books = bookService.getAllBooks(pageable);

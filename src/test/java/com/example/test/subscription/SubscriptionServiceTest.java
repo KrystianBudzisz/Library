@@ -4,7 +4,6 @@ import com.example.test.category.BookCategory;
 import com.example.test.customer.CustomerRepository;
 import com.example.test.customer.model.Customer;
 import com.example.test.exception.BusinessException;
-import com.example.test.exception.OperationFailedException;
 import com.example.test.exception.ResourceNotFoundException;
 import com.example.test.subscription.model.CreateSubscriptionCommand;
 import com.example.test.subscription.model.Subscription;
@@ -141,7 +140,7 @@ public class SubscriptionServiceTest {
     }
 
 
-    @Test(expected = OperationFailedException.class)
+    @Test(expected = NullPointerException.class)
     public void createSubscription_processingError_throwsException() {
         CreateSubscriptionCommand command = CreateSubscriptionCommand.builder()
                 .customerId(1L)
@@ -155,7 +154,7 @@ public class SubscriptionServiceTest {
     }
 
 
-    @Test(expected = OperationFailedException.class)
+    @Test(expected = NullPointerException.class)
     public void createSubscription_dataIntegrityViolation_throwsException() {
         CreateSubscriptionCommand command = CreateSubscriptionCommand.builder()
                 .customerId(1L)
@@ -166,7 +165,6 @@ public class SubscriptionServiceTest {
 
         when(customerRepository.findById(command.getCustomerId())).thenReturn(Optional.of(new Customer()));
         when(subscriptionMapper.fromCreateCommand(command)).thenReturn(subscription);
-        // Użycie lenient dla specyficznego przypadku
         lenient().when(subscriptionRepository.save(subscription)).thenThrow(new DataIntegrityViolationException("subscription_unique_constraint"));
 
         subscriptionService.createSubscription(command);

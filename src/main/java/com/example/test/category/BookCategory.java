@@ -18,7 +18,6 @@ public class BookCategory {
     @Column(name = "category_name")
     private String categoryName;
 
-
 }
 
 

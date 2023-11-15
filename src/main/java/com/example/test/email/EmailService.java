@@ -2,20 +2,22 @@ package com.example.test.email;
 
 import com.example.test.book.BookRepository;
 import com.example.test.book.model.Book;
+import com.example.test.config.AppConfig;
 import com.example.test.subscription.SubscriptionRepository;
 import com.example.test.subscription.model.Subscription;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 
 @AllArgsConstructor
@@ -28,6 +30,8 @@ public class EmailService {
 
     private final SubscriptionRepository subscriptionRepository;
 
+    private final AppConfig appConfig;
+
 
     public void sendConfirmationEmail(String to, String subject, String token) {
         validateEmailParameters(to, subject, token);
@@ -39,7 +43,7 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject(subject);
 
-            String confirmationUrl = "http://localhost:8080/api/customers/confirm-email?token=" + token;
+            String confirmationUrl = appConfig.getBaseUrl() + "/api/customers/confirm-email?token=" + token;
 
             String htmlContent = "<h1>Witaj!</h1>"
                     + "<p>Dziękujemy za zarejestrowanie się w naszej aplikacji. Proszę potwierdź swój adres email, klikając poniższy link:</p>"
@@ -69,27 +73,52 @@ public class EmailService {
         }
     }
 
-    @Scheduled(cron = "0 0 12 * * ?")
-    public void sendDailyBookUpdates() {
-        List<Book> newBooks = bookRepository.findBooksAddedToday();
 
-        Map<String, List<Book>> subscriberBookMap = new HashMap<>();
-
-        for (Book book : newBooks) {
-            List<Subscription> subscriptions = subscriptionRepository.findSubscriptionsByAuthorOrCategory(
-                    book.getAuthor(), book.getCategory());
-            for (Subscription subscription : subscriptions) {
-                subscriberBookMap
-                        .computeIfAbsent(subscription.getCustomer().getEmail(), k -> new ArrayList<>())
-                        .add(book);
+    private Map<String, List<Book>> mapSubscriptionsToBooks(List<Subscription> subscriptions, List<Book> newBooks) {
+        Map<String, List<Book>> emailToBooksMap = new HashMap<>();
+        for (Subscription subscription : subscriptions) {
+            for (Book book : newBooks) {
+                if (book.getAuthor().equals(subscription.getAuthor()) || book.getCategory().equals(subscription.getCategory())) {
+                    emailToBooksMap.computeIfAbsent(subscription.getCustomer().getEmail(), k -> new ArrayList<>()).add(book);
+                }
             }
         }
-
-
-        for (Map.Entry<String, List<Book>> entry : subscriberBookMap.entrySet()) {
-            sendBeautifulNewBooksNotification(entry.getKey(), entry.getValue());
-        }
+        return emailToBooksMap;
     }
+
+    @Scheduled(cron = "0 0 12 * * ?")
+    public void sendDailyBookUpdates() {
+        int page = 0;
+        final int size = 10000;
+
+        Page<Book> pageResult;
+        LocalDate today = LocalDate.now();
+        do {
+            pageResult = bookRepository.findBooksAddedToday(today, PageRequest.of(page, size));
+            List<Book> newBooks = pageResult.getContent();
+            processNewBooks(newBooks);
+            page++;
+        } while (pageResult.hasNext());
+    }
+
+
+    private void processNewBooks(List<Book> newBooks) {
+        Set<String> authors = new HashSet<>();
+        Set<Long> categoryIds = new HashSet<>();
+
+        for (Book book : newBooks) {
+            authors.add(book.getAuthor());
+            categoryIds.add(book.getCategory().getId());
+        }
+
+        List<Subscription> subscriptions = subscriptionRepository.findByAuthorsOrCategories(authors, categoryIds);
+
+        Map<String, List<Book>> emailToBooksMap = mapSubscriptionsToBooks(subscriptions, newBooks);
+
+        emailToBooksMap.forEach((email, booksToSend) ->
+                CompletableFuture.runAsync(() -> sendBeautifulNewBooksNotification(email, booksToSend)));
+    }
+
 
     public void sendBeautifulNewBooksNotification(String to, List<Book> books) {
         String subject = "New Books in Our Store!";
@@ -108,6 +137,7 @@ public class EmailService {
             throw new RuntimeException("Problem sending the email", e);
         }
     }
+
 
     private String buildBeautifulBooksNotificationContent(List<Book> books) {
         StringBuilder content = new StringBuilder();

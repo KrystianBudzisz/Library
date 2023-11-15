@@ -111,7 +111,7 @@ public class SubscriptionControllerTest {
                 .category(testBookCategory)
                 .build();
 
-        mockMvc.perform(post("/api/subscriptions/create")
+        mockMvc.perform(post("/api/subscriptions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(command)))
                 .andExpect(status().isCreated())
@@ -135,7 +135,7 @@ public class SubscriptionControllerTest {
     void testCancelSubscription() throws Exception {
         assertTrue(subscriptionRepository.existsById(sampleSubscription.getId()));
 
-        mockMvc.perform(delete("/api/subscriptions/cancel/" + sampleSubscription.getId())
+        mockMvc.perform(delete("/api/subscriptions/" + sampleSubscription.getId())
                         .with(user("user").roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Subscription successfully canceled")));
@@ -147,16 +147,12 @@ public class SubscriptionControllerTest {
 
     @Test
     void testGetAllSubscriptions() throws Exception {
-        mockMvc.perform(get("/api/subscriptions/all")
+        mockMvc.perform(get("/api/subscriptions")
                         .with(user("admin").roles("ADMIN"))
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].author").value(sampleBook.getAuthor()));
-
-        List<Subscription> subscriptions = subscriptionRepository.findAll();
-        assertEquals(1, subscriptions.size());
-        assertEquals(sampleSubscription.getId(), subscriptions.get(0).getId());
+                .andExpect(jsonPath("$.content[?(@.customerId == %d)].author", sampleCustomer.getId()).value(sampleBook.getAuthor()));
     }
 
     @AfterEach

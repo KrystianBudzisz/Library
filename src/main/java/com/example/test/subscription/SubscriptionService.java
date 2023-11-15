@@ -10,6 +10,7 @@ import com.example.test.subscription.model.SubscriptionDTO;
 import com.example.test.subscription.model.SubscriptionMapper;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +32,6 @@ public class SubscriptionService {
 
     @Transactional
     public SubscriptionDTO createSubscription(CreateSubscriptionCommand command) {
-
         Customer customer = customerRepository.findById(command.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
@@ -39,20 +39,23 @@ public class SubscriptionService {
             throw new BusinessException("Either author or category must be provided");
         }
 
-        Subscription newSubscription;
-        try {
-            newSubscription = subscriptionMapper.fromCreateCommand(command);
-            customer.addSubscription(newSubscription);
-            newSubscription = subscriptionRepository.save(newSubscription);
-        } catch (DataIntegrityViolationException e) {
-            if (e.getMessage().contains("subscription_unique_constraint")) {
-                throw new DuplicateResourceException("Subscription with these details already exists for the customer");
-            }
-            throw new DatabaseException("Error occurred while processing subscription information");
-        } catch (Exception e) {
-            throw new OperationFailedException("Unexpected error while creating the subscription.");
-        }
+        Subscription newSubscription = subscriptionMapper.fromCreateCommand(command);
+        customer.addSubscription(newSubscription);
 
+        try {
+            newSubscription = subscriptionRepository.save(newSubscription);
+        } catch (DataIntegrityViolationException ex) {
+            Throwable rootCause = ex.getMostSpecificCause();
+            if (rootCause instanceof ConstraintViolationException) {
+                ConstraintViolationException constraintEx = (ConstraintViolationException) rootCause;
+                if ("uk_subscription_customer_author_category".equals(constraintEx.getConstraintName())) {
+                    throw new DuplicateResourceException("Subscription with these details already exists for the customer");
+                }
+            }
+            throw new DatabaseException("Error occurred while processing subscription information", ex);
+        } catch (Exception e) {
+            throw new OperationFailedException("Unexpected error while creating the subscription.", e);
+        }
 
         return subscriptionMapper.toDTO(newSubscription);
     }

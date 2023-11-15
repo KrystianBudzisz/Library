@@ -21,13 +21,13 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @PostMapping("/register")
+    @PostMapping
     public ResponseEntity<CustomerDTO> registerCustomer(@Valid @RequestBody CreateCustomerCommand command) {
         CustomerDTO createdCustomer = customerService.registerCustomer(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCustomer);
     }
 
-    @GetMapping("/confirm-email")
+    @PostMapping("/confirm-email")
     public ResponseEntity<String> confirmEmail(@RequestParam String token) {
         String message = customerService.confirmEmail(token);
         return ResponseEntity.ok(message);
@@ -35,7 +35,7 @@ public class CustomerController {
 
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<Page<CustomerDTO>> getAllCustomers(@PageableDefault(page = 0, size = 10) Pageable pageable) {
         Page<CustomerDTO> customers = customerService.getAllCustomers(pageable);
         return ResponseEntity.ok(customers);

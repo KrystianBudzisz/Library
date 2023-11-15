@@ -79,7 +79,7 @@ public class BookControllerTest {
                 .category(testBookCategory)
                 .build();
 
-        mockMvc.perform(post("/api/books/add")
+        mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(user("admin").roles("ADMIN"))
                         .content(objectMapper.writeValueAsString(command)))
@@ -97,7 +97,7 @@ public class BookControllerTest {
 
     @Test
     void testGetAllBooks() throws Exception {
-        mockMvc.perform(get("/api/books/all")
+        mockMvc.perform(get("/api/books")
                         .with(user("user").roles("USER"))
                         .param("page", "0")
                         .param("size", "10"))

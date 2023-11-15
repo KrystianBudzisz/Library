@@ -56,7 +56,7 @@ public class CustomerControllerTest {
         String jsonRequest = objectMapper.writeValueAsString(command);
 
         mockMvc.perform(
-                        post("/api/customers/register")
+                        post("/api/customers")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(jsonRequest)
                 )
@@ -73,6 +73,7 @@ public class CustomerControllerTest {
         assertEquals("Doe", registeredCustomer.get().getLastName());
     }
 
+
     @Test
     public void testConfirmEmail() throws Exception {
         Customer customer = new Customer();
@@ -84,7 +85,7 @@ public class CustomerControllerTest {
         customerRepository.save(customer);
 
         mockMvc.perform(
-                        get("/api/customers/confirm-email")
+                        post("/api/customers/confirm-email")
                                 .param("token", customer.getConfirmationToken())
                 )
                 .andExpect(status().isOk())
@@ -112,7 +113,7 @@ public class CustomerControllerTest {
         customerRepository.save(customer2);
 
         mockMvc.perform(
-                        get("/api/customers/all")
+                        get("/api/customers")
                                 .param("page", "0")
                                 .param("size", "10")
                 )

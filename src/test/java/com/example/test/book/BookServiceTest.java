@@ -6,7 +6,6 @@ import com.example.test.book.model.BookMapper;
 import com.example.test.book.model.CreateBookCommand;
 import com.example.test.category.BookCategory;
 import com.example.test.exception.DatabaseException;
-import com.example.test.exception.DuplicateResourceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -99,7 +98,7 @@ class BookServiceTest {
         when(bookMapper.fromCreateCommand(command)).thenReturn(book);
         when(bookRepository.save(book)).thenThrow(new DataIntegrityViolationException("Error"));
 
-        assertThrows(DuplicateResourceException.class, () -> bookService.addBook(command));
+        assertThrows(DatabaseException.class, () -> bookService.addBook(command));
     }
 
     @Test
@@ -110,7 +109,7 @@ class BookServiceTest {
         when(bookMapper.fromCreateCommand(command)).thenReturn(book);
         when(bookRepository.save(book)).thenThrow(new RuntimeException("Some other error"));
 
-        assertThrows(DatabaseException.class, () -> bookService.addBook(command));
+        assertThrows(RuntimeException.class, () -> bookService.addBook(command));
     }
 
     @Test

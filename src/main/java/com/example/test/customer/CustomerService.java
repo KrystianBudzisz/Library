@@ -7,6 +7,7 @@ import com.example.test.customer.model.CustomerMapper;
 import com.example.test.email.EmailService;
 import com.example.test.exception.*;
 import lombok.AllArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,9 +26,8 @@ public class CustomerService {
 
     @Transactional
     public CustomerDTO registerCustomer(CreateCustomerCommand command) {
-
         if (customerRepository.existsByEmail(command.getEmail())) {
-            throw new DuplicateResourceException("Email is already in use.");
+            throw new DuplicateResourceException("Customer with email '" + command.getEmail() + "' already exists.");
         }
 
         Customer newCustomer = customerMapper.fromCreateCommand(command);
@@ -35,15 +35,22 @@ public class CustomerService {
         newCustomer.setConfirmationToken(generateUniqueConfirmationToken());
 
         try {
-            customerRepository.save(newCustomer);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateResourceException("Customer with given email already exists.");
+            newCustomer = customerRepository.save(newCustomer);
+        } catch (DataIntegrityViolationException ex) {
+            Throwable rootCause = ex.getMostSpecificCause();
+            if (rootCause instanceof ConstraintViolationException) {
+                ConstraintViolationException cve = (ConstraintViolationException) rootCause;
+                if ("uk_email".equals(cve.getConstraintName())) {
+                    throw new DuplicateResourceException("Customer with the given email already exists.");
+                }
+            }
+            throw new DatabaseException("An error occurred during the registration process.", ex);
         }
 
         try {
             emailService.sendConfirmationEmail(newCustomer.getEmail(), "Email Confirmation", newCustomer.getConfirmationToken());
         } catch (Exception e) {
-            throw new EmailServiceException("Error occurred while sending confirmation email.");
+            throw new EmailServiceException("Error occurred while sending confirmation email.", e);
         }
 
         return customerMapper.toDTO(newCustomer);

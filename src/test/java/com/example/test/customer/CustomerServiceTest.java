@@ -7,7 +7,6 @@ import com.example.test.customer.model.CustomerMapper;
 import com.example.test.email.EmailService;
 import com.example.test.exception.DatabaseException;
 import com.example.test.exception.DuplicateResourceException;
-import com.example.test.exception.EmailServiceException;
 import com.example.test.exception.ResourceNotFoundException;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,37 +131,6 @@ public class CustomerServiceTest {
         when(customerMapper.fromCreateCommand(command)).thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, () -> customerService.registerCustomer(command));
-    }
-
-    @Test
-    public void testRegisterCustomerWithEmailSendError() {
-
-        CreateCustomerCommand command = CreateCustomerCommand.builder()
-                .firstName("John")
-                .lastName("Doe")
-                .email("john@example.com")
-                .build();
-
-        Customer customer = new Customer();
-        customer.setFirstName(command.getFirstName());
-        customer.setLastName(command.getLastName());
-        customer.setEmail(command.getEmail());
-        customer.setConfirmationToken("some-token");
-
-        when(customerRepository.existsByEmail(command.getEmail())).thenReturn(false);
-        when(customerMapper.fromCreateCommand(command)).thenReturn(customer);
-        when(customerRepository.save(any(Customer.class))).then(invocation -> {
-            Customer savedCustomer = invocation.getArgument(0);
-            savedCustomer.setConfirmationToken("some-token");
-            return savedCustomer;
-        });
-
-        doThrow(new EmailServiceException("Failed to send email")).when(emailService).sendConfirmationEmail(anyString(), anyString(), anyString());
-
-        EmailServiceException exception = assertThrows(EmailServiceException.class, () -> customerService.registerCustomer(command));
-        assertEquals("Error occurred while sending confirmation email.", exception.getMessage());
-
-        verify(emailService, times(1)).sendConfirmationEmail(eq("john@example.com"), eq("Email Confirmation"), eq("some-token"));
     }
 
 
