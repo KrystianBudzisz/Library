@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -85,6 +86,7 @@ public class SubscriptionControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "USER")
     void testCreateSubscription_ValidData_CreatesSubscription() throws Exception {
 
         Customer testCustomer = customerRepository.saveAndFlush(Customer.builder()
@@ -108,7 +110,7 @@ public class SubscriptionControllerTest {
         CreateSubscriptionCommand command = CreateSubscriptionCommand.builder()
                 .customerId(testCustomer.getId())
                 .author(testBook.getAuthor())
-                .category(testBookCategory)
+                .categoryId(testBookCategory.getId())
                 .build();
 
         mockMvc.perform(post("/api/subscriptions")
@@ -117,7 +119,7 @@ public class SubscriptionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.author", is(testBook.getAuthor())))
                 .andExpect(jsonPath("$.customerId", is(testCustomer.getId().intValue())))
-                .andExpect(jsonPath("$.category.id", is(testBookCategory.getId().intValue())));
+                .andExpect(jsonPath("$.categoryId", is(testBookCategory.getId().intValue())));
 
         List<Subscription> subscriptions = subscriptionRepository.findAll();
         assertThat(subscriptions, hasSize(2));

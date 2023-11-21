@@ -5,12 +5,12 @@ import com.example.test.book.model.BookDTO;
 import com.example.test.book.model.BookMapper;
 import com.example.test.book.model.CreateBookCommand;
 import com.example.test.category.BookCategory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,6 +21,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class BookServiceTest {
 
     @Mock
@@ -32,10 +33,6 @@ class BookServiceTest {
     @InjectMocks
     private BookService bookService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     private BookCategory createSampleBookCategory() {
         return BookCategory.builder()
@@ -61,7 +58,7 @@ class BookServiceTest {
         CreateBookCommand createBookCommand = CreateBookCommand.builder()
                 .title("Sample Title")
                 .author("AuthorName")
-                .category(createSampleBookCategory())
+                .categoryId(createSampleBookCategory().getId())
                 .build();
 
         Book sampleBook = Book.builder()
@@ -91,7 +88,8 @@ class BookServiceTest {
 
     @Test
     void addBookThrowsExceptionWhenDataIntegrityIsViolated() {
-        CreateBookCommand command = new CreateBookCommand("AuthorName", "BookTitle", new BookCategory());
+        Long categoryId = 1L;
+        CreateBookCommand command = new CreateBookCommand("AuthorName", "BookTitle", categoryId);
         Book book = new Book();
 
         when(bookMapper.fromCreateCommand(command)).thenReturn(book);
@@ -102,7 +100,8 @@ class BookServiceTest {
 
     @Test
     void addBookThrowsDatabaseExceptionOnOtherErrors() {
-        CreateBookCommand command = new CreateBookCommand("AuthorName", "BookTitle", new BookCategory());
+        Long categoryId = 1L;
+        CreateBookCommand command = new CreateBookCommand("AuthorName", "BookTitle", categoryId);
         Book book = new Book();
 
         when(bookMapper.fromCreateCommand(command)).thenReturn(book);
@@ -113,7 +112,9 @@ class BookServiceTest {
 
     @Test
     void shouldThrowExceptionWhenAuthorIsBlank() {
-        CreateBookCommand commandWithBlankAuthor = new CreateBookCommand("", "ValidTitle", new BookCategory());
+        Long categoryId = 1L;
+
+        CreateBookCommand commandWithBlankAuthor = new CreateBookCommand("", "ValidTitle", categoryId);
 
         assertThrows(NullPointerException.class, () -> bookService.addBook(commandWithBlankAuthor));
 
@@ -122,7 +123,9 @@ class BookServiceTest {
 
     @Test
     void shouldThrowExceptionWhenTitleIsBlank() {
-        CreateBookCommand commandWithBlankTitle = new CreateBookCommand("ValidAuthor", "", new BookCategory());
+        Long categoryId = 1L;
+
+        CreateBookCommand commandWithBlankTitle = new CreateBookCommand("ValidAuthor", "", categoryId);
 
         assertThrows(NullPointerException.class, () -> bookService.addBook(commandWithBlankTitle));
 

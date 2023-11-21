@@ -90,19 +90,25 @@ public class EmailService {
     public void sendDailyBookUpdates() {
         int page = 0;
         final int size = 10000;
+        LocalDate today = LocalDate.now();
+
+        Map<String, Set<Book>> emailToAllBooksMap = new HashMap<>();
 
         Page<Book> pageResult;
-        LocalDate today = LocalDate.now();
         do {
             pageResult = bookRepository.findBooksAddedToday(today, PageRequest.of(page, size));
             List<Book> newBooks = pageResult.getContent();
-            processNewBooks(newBooks);
+
+            accumulateBooksForCustomers(emailToAllBooksMap, newBooks);
+
             page++;
         } while (pageResult.hasNext());
+
+        emailToAllBooksMap.forEach((email, booksToSend) ->
+                sendBeautifulNewBooksNotification(email, new ArrayList<>(booksToSend)));
     }
 
-
-    private void processNewBooks(List<Book> newBooks) {
+    private void accumulateBooksForCustomers(Map<String, Set<Book>> emailToAllBooksMap, List<Book> newBooks) {
         Set<String> authors = new HashSet<>();
         Set<Long> categoryIds = new HashSet<>();
 
@@ -115,9 +121,9 @@ public class EmailService {
 
         Map<String, Set<Book>> emailToBooksMap = mapSubscriptionsToBooks(subscriptions, newBooks);
 
-        emailToBooksMap.forEach((email, booksToSend) ->
-                sendBeautifulNewBooksNotification(email, new ArrayList<>(booksToSend)));
+        emailToBooksMap.forEach((email, books) -> emailToAllBooksMap.computeIfAbsent(email, k -> new HashSet<>()).addAll(books));
     }
+
 
 
     public void sendBeautifulNewBooksNotification(String to, List<Book> books) {

@@ -19,6 +19,7 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
+    @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping
     public ResponseEntity<SubscriptionDTO> createSubscription(@Valid @RequestBody CreateSubscriptionCommand command) {
         SubscriptionDTO createdSubscription = subscriptionService.createSubscription(command);

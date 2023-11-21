@@ -20,7 +20,7 @@ public class CustomerController {
 
     private final CustomerService customerService;
 
-    @PreAuthorize("hasRole('ROLE_USER')")
+
     @PostMapping
     public ResponseEntity<CustomerDTO> registerCustomer(@Valid @RequestBody CreateCustomerCommand command) {
         CustomerDTO createdCustomer = customerService.registerCustomer(command);

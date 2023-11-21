@@ -1,7 +1,8 @@
 package com.example.test.book.model;
 
-import com.example.test.category.BookCategory;
 import lombok.*;
+
+import java.time.LocalDate;
 
 @Setter
 @NoArgsConstructor
@@ -12,6 +13,6 @@ public class BookDTO {
     private Long id;
     private String author;
     private String title;
-    private BookCategory category;
-
+    private Long categoryId;
+    private LocalDate addedDate;
 }

@@ -53,11 +53,6 @@ public class SubscriptionServiceTest {
     private ArgumentCaptor<Subscription> subscriptionCaptor;
 
 
-    @BeforeEach
-    void setUp() {
-
-
-    }
 
     @Test
     public void getAllSubscriptions_returnsExpectedSubscriptions() {
@@ -83,17 +78,18 @@ public class SubscriptionServiceTest {
 
     @Test
     public void createSubscription_validRequest_createsSubscription() {
+        BookCategory bookCategory = new BookCategory(1L, "Fiction");
         CreateSubscriptionCommand command = CreateSubscriptionCommand.builder()
                 .customerId(1L)
                 .author("Test Author")
-                .category(new BookCategory(1L, "Fiction"))
+                .categoryId(bookCategory.getId())
                 .build();
 
         Customer mockedCustomer = new Customer(1L, "John", "Doe", "john.doe@example.com", true, "token", new HashSet<>());
         Subscription expectedSubscription = new Subscription();
         expectedSubscription.setCustomer(mockedCustomer);
         expectedSubscription.setAuthor(command.getAuthor());
-        expectedSubscription.setCategory(command.getCategory());
+        expectedSubscription.setCategory(bookCategory);
         expectedSubscription.setVersion(1);
         SubscriptionDTO expectedSubscriptionDTO = new SubscriptionDTO();
 
@@ -112,7 +108,7 @@ public class SubscriptionServiceTest {
         Subscription savedSubscription = subscriptionCaptor.getValue();
         assertEquals(command.getAuthor(), savedSubscription.getAuthor());
         assertEquals(command.getCustomerId(), savedSubscription.getCustomer().getId());
-        assertEquals(command.getCategory(), savedSubscription.getCategory());
+        assertEquals(command.getCustomerId(), savedSubscription.getCategory().getId());
         assertNotNull(savedSubscription.getVersion());
     }
 

@@ -1,7 +1,6 @@
 package com.example.test.subscription.model;
 
 
-import com.example.test.category.BookCategory;
 import lombok.*;
 
 @Setter
@@ -13,6 +12,5 @@ public class SubscriptionDTO {
     private Long id;
     private Long customerId;
     private String author;
-    private BookCategory category;
-
+    private Long categoryId;
 }

@@ -1,6 +1,5 @@
 package com.example.test.book.model;
 
-import com.example.test.category.BookCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -18,6 +17,6 @@ public class CreateBookCommand {
     @NotBlank(message = "Title must not be blank")
     private String title;
 
-    @NotNull(message = "Category must not be null")
-    private BookCategory category;
+    @NotNull(message = "Category ID must not be null")
+    private Long categoryId;
 }

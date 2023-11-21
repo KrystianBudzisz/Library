@@ -1,6 +1,7 @@
 package com.example.test.subscription.model;
 
 import com.example.test.category.BookCategory;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,5 +18,6 @@ public class CreateSubscriptionCommand {
 
     private String author;
 
-    private BookCategory category;
+    @NotNull(message = "Category ID must not be null")
+    private Long categoryId;
 }

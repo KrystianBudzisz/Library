@@ -76,7 +76,7 @@ public class BookControllerTest {
         CreateBookCommand command = CreateBookCommand.builder()
                 .author("Andrzej Sapkowski")
                 .title("Wiedźmin")
-                .category(testBookCategory)
+                .categoryId(testBookCategory.getId())
                 .build();
 
         mockMvc.perform(post("/api/books")
