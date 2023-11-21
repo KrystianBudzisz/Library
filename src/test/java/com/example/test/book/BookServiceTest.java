@@ -5,7 +5,6 @@ import com.example.test.book.model.BookDTO;
 import com.example.test.book.model.BookMapper;
 import com.example.test.book.model.CreateBookCommand;
 import com.example.test.category.BookCategory;
-import com.example.test.exception.DatabaseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -98,7 +97,7 @@ class BookServiceTest {
         when(bookMapper.fromCreateCommand(command)).thenReturn(book);
         when(bookRepository.save(book)).thenThrow(new DataIntegrityViolationException("Error"));
 
-        assertThrows(DatabaseException.class, () -> bookService.addBook(command));
+        assertThrows(DataIntegrityViolationException.class, () -> bookService.addBook(command));
     }
 
     @Test

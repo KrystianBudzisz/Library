@@ -5,10 +5,11 @@ import com.example.test.customer.model.Customer;
 import com.example.test.customer.model.CustomerDTO;
 import com.example.test.customer.model.CustomerMapper;
 import com.example.test.email.EmailService;
-import com.example.test.exception.*;
+import com.example.test.exception.BusinessException;
+import com.example.test.exception.DatabaseException;
+import com.example.test.exception.EmailServiceException;
+import com.example.test.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
-import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,26 +27,13 @@ public class CustomerService {
 
     @Transactional
     public CustomerDTO registerCustomer(CreateCustomerCommand command) {
-        if (customerRepository.existsByEmail(command.getEmail())) {
-            throw new DuplicateResourceException("Customer with email '" + command.getEmail() + "' already exists.");
-        }
 
         Customer newCustomer = customerMapper.fromCreateCommand(command);
         newCustomer.setEmailConfirmed(false);
         newCustomer.setConfirmationToken(generateUniqueConfirmationToken());
 
-        try {
-            newCustomer = customerRepository.save(newCustomer);
-        } catch (DataIntegrityViolationException ex) {
-            Throwable rootCause = ex.getMostSpecificCause();
-            if (rootCause instanceof ConstraintViolationException) {
-                ConstraintViolationException cve = (ConstraintViolationException) rootCause;
-                if ("uk_email".equals(cve.getConstraintName())) {
-                    throw new DuplicateResourceException("Customer with the given email already exists.");
-                }
-            }
-            throw new DatabaseException("An error occurred during the registration process.", ex);
-        }
+
+        newCustomer = customerRepository.save(newCustomer);
 
         try {
             emailService.sendConfirmationEmail(newCustomer.getEmail(), "Email Confirmation", newCustomer.getConfirmationToken());

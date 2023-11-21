@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 
 @AllArgsConstructor
@@ -74,17 +73,18 @@ public class EmailService {
     }
 
 
-    private Map<String, List<Book>> mapSubscriptionsToBooks(List<Subscription> subscriptions, List<Book> newBooks) {
-        Map<String, List<Book>> emailToBooksMap = new HashMap<>();
+    private Map<String, Set<Book>> mapSubscriptionsToBooks(List<Subscription> subscriptions, List<Book> newBooks) {
+        Map<String, Set<Book>> emailToBooksMap = new HashMap<>();
         for (Subscription subscription : subscriptions) {
             for (Book book : newBooks) {
                 if (book.getAuthor().equals(subscription.getAuthor()) || book.getCategory().equals(subscription.getCategory())) {
-                    emailToBooksMap.computeIfAbsent(subscription.getCustomer().getEmail(), k -> new ArrayList<>()).add(book);
+                    emailToBooksMap.computeIfAbsent(subscription.getCustomer().getEmail(), k -> new HashSet<>()).add(book);
                 }
             }
         }
         return emailToBooksMap;
     }
+
 
     @Scheduled(cron = "0 0 12 * * ?")
     public void sendDailyBookUpdates() {
@@ -113,10 +113,10 @@ public class EmailService {
 
         List<Subscription> subscriptions = subscriptionRepository.findByAuthorsOrCategories(authors, categoryIds);
 
-        Map<String, List<Book>> emailToBooksMap = mapSubscriptionsToBooks(subscriptions, newBooks);
+        Map<String, Set<Book>> emailToBooksMap = mapSubscriptionsToBooks(subscriptions, newBooks);
 
         emailToBooksMap.forEach((email, booksToSend) ->
-                CompletableFuture.runAsync(() -> sendBeautifulNewBooksNotification(email, booksToSend)));
+                sendBeautifulNewBooksNotification(email, new ArrayList<>(booksToSend)));
     }
 
 

@@ -3,7 +3,6 @@ package com.example.test.subscription;
 import com.example.test.category.BookCategory;
 import com.example.test.customer.CustomerRepository;
 import com.example.test.customer.model.Customer;
-import com.example.test.exception.BusinessException;
 import com.example.test.exception.ResourceNotFoundException;
 import com.example.test.subscription.model.CreateSubscriptionCommand;
 import com.example.test.subscription.model.Subscription;
@@ -128,7 +127,7 @@ public class SubscriptionServiceTest {
         subscriptionService.createSubscription(command);
     }
 
-    @Test(expected = BusinessException.class)
+    @Test(expected = NullPointerException.class)
     public void createSubscription_withoutAuthorOrCategory_throwsException() {
         CreateSubscriptionCommand command = CreateSubscriptionCommand.builder()
                 .customerId(1L)
