@@ -10,13 +10,17 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 @AllArgsConstructor
@@ -73,58 +77,57 @@ public class EmailService {
     }
 
 
-    private Map<String, Set<Book>> mapSubscriptionsToBooks(List<Subscription> subscriptions, List<Book> newBooks) {
-        Map<String, Set<Book>> emailToBooksMap = new HashMap<>();
-        for (Subscription subscription : subscriptions) {
-            for (Book book : newBooks) {
-                if (book.getAuthor().equals(subscription.getAuthor()) || book.getCategory().equals(subscription.getCategory())) {
-                    emailToBooksMap.computeIfAbsent(subscription.getCustomer().getEmail(), k -> new HashSet<>()).add(book);
-                }
-            }
-        }
-        return emailToBooksMap;
-    }
-
-
     @Scheduled(cron = "0 0 12 * * ?")
     public void sendDailyBookUpdates() {
-        int page = 0;
-        final int size = 10000;
         LocalDate today = LocalDate.now();
-
-        Map<String, Set<Book>> emailToAllBooksMap = new HashMap<>();
-
+        final int pageSize = 10000;
         Page<Book> pageResult;
+        Pageable pageable = PageRequest.of(0, pageSize);
+
         do {
-            pageResult = bookRepository.findBooksAddedToday(today, PageRequest.of(page, size));
+            pageResult = bookRepository.findBooksAddedToday(today, pageable);
             List<Book> newBooks = pageResult.getContent();
 
-            accumulateBooksForCustomers(emailToAllBooksMap, newBooks);
+            processSubscriptionsInBatches(newBooks);
 
-            page++;
+            pageable = pageResult.nextPageable();
         } while (pageResult.hasNext());
-
-        emailToAllBooksMap.forEach((email, booksToSend) ->
-                sendBeautifulNewBooksNotification(email, new ArrayList<>(booksToSend)));
     }
 
-    private void accumulateBooksForCustomers(Map<String, Set<Book>> emailToAllBooksMap, List<Book> newBooks) {
-        Set<String> authors = new HashSet<>();
-        Set<Long> categoryIds = new HashSet<>();
 
+    private void processSubscriptionsInBatches(List<Book> newBooks) {
+        int batchSize = 500;
+        int page = 0;
+
+        Pageable subscriptionPageable = PageRequest.of(page, batchSize);
+        Page<Subscription> subscriptionPage;
+
+        do {
+            subscriptionPage = subscriptionRepository.findAll(subscriptionPageable);
+            List<Subscription> subscriptions = subscriptionPage.getContent();
+
+            for (Subscription subscription : subscriptions) {
+                Set<Book> matchedBooks = matchBooksToSubscription(subscription, newBooks);
+                if (!matchedBooks.isEmpty()) {
+                    sendBeautifulNewBooksNotification(subscription.getCustomer().getEmail(), new ArrayList<>(matchedBooks));
+                }
+            }
+
+            subscriptionPageable = subscriptionPage.nextPageable();
+            page++;
+        } while (subscriptionPage.hasNext());
+    }
+
+    private Set<Book> matchBooksToSubscription(Subscription subscription, List<Book> newBooks) {
+        Set<Book> matchedBooks = new HashSet<>();
         for (Book book : newBooks) {
-            authors.add(book.getAuthor());
-            categoryIds.add(book.getCategory().getId());
+            if (book.getAuthor().equals(subscription.getAuthor()) ||
+                    book.getCategory().equals(subscription.getCategory())) {
+                matchedBooks.add(book);
+            }
         }
-
-        List<Subscription> subscriptions = subscriptionRepository.findByAuthorsOrCategories(authors, categoryIds);
-
-        Map<String, Set<Book>> emailToBooksMap = mapSubscriptionsToBooks(subscriptions, newBooks);
-
-        emailToBooksMap.forEach((email, books) -> emailToAllBooksMap.computeIfAbsent(email, k -> new HashSet<>()).addAll(books));
+        return matchedBooks;
     }
-
-
 
     public void sendBeautifulNewBooksNotification(String to, List<Book> books) {
         String subject = "New Books in Our Store!";

@@ -7,7 +7,6 @@ import com.example.test.customer.model.CustomerMapper;
 import com.example.test.email.EmailService;
 import com.example.test.exception.BusinessException;
 import com.example.test.exception.DatabaseException;
-import com.example.test.exception.EmailServiceException;
 import com.example.test.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,26 +28,21 @@ public class CustomerService {
     public CustomerDTO registerCustomer(CreateCustomerCommand command) {
 
         Customer newCustomer = customerMapper.fromCreateCommand(command);
+
         newCustomer.setEmailConfirmed(false);
         newCustomer.setConfirmationToken(generateUniqueConfirmationToken());
-
-
         newCustomer = customerRepository.save(newCustomer);
 
-        try {
-            emailService.sendConfirmationEmail(newCustomer.getEmail(), "Email Confirmation", newCustomer.getConfirmationToken());
-        } catch (Exception e) {
-            throw new EmailServiceException("Error occurred while sending confirmation email.", e);
-        }
+        emailService.sendConfirmationEmail(newCustomer.getEmail(), "Email Confirmation", newCustomer.getConfirmationToken());
 
         return customerMapper.toDTO(newCustomer);
     }
 
+    @Transactional(readOnly = true)
     public Page<CustomerDTO> getAllCustomers(Pageable pageable) {
         Page<Customer> customers = customerRepository.findAll(pageable);
         return customers.map(customerMapper::toDTO);
     }
-
 
     private String generateUniqueConfirmationToken() {
         return UUID.randomUUID().toString();
@@ -68,11 +62,6 @@ public class CustomerService {
         }
 
         customer.setEmailConfirmed(true);
-        try {
-            customerRepository.save(customer);
-        } catch (Exception e) {
-            throw new DatabaseException("Error occurred while confirming email");
-        }
 
         return "Email successfully confirmed";
     }

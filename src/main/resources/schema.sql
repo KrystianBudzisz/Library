@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS books (
     CONSTRAINT uk_author_title UNIQUE (author, title),
     FOREIGN KEY (category_id) REFERENCES book_categories(id) ON DELETE CASCADE
     );
-
-CREATE TABLE IF NOT EXISTS subscriptions (
+ CREATE TABLE IF NOT EXISTS subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     customer_id BIGINT,
     author VARCHAR(100),

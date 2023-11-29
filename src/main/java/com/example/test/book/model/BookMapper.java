@@ -3,6 +3,8 @@ package com.example.test.book.model;
 import com.example.test.category.BookCategory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+
 @Component
 public class BookMapper {
 
@@ -14,9 +16,11 @@ public class BookMapper {
         BookCategory category = new BookCategory();
         category.setId(command.getCategoryId());
         book.setCategory(category);
+        book.setAddedDate(LocalDate.now());
 
         return book;
     }
+
 
     public BookDTO toDTO(Book book) {
         BookDTO dto = new BookDTO();
