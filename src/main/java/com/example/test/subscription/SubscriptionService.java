@@ -9,11 +9,11 @@ import com.example.test.subscription.model.CreateSubscriptionCommand;
 import com.example.test.subscription.model.Subscription;
 import com.example.test.subscription.model.SubscriptionDTO;
 import com.example.test.subscription.model.SubscriptionMapper;
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @AllArgsConstructor
 @Service
@@ -23,7 +23,7 @@ public class SubscriptionService {
     private final SubscriptionMapper subscriptionMapper;
     private final CustomerRepository customerRepository;
 
-
+    @Transactional(readOnly = true)
     public Page<SubscriptionDTO> getAllSubscriptions(Pageable pageable) {
         Page<Subscription> subscriptions = subscriptionRepository.findAll(pageable);
         return subscriptions.map(subscriptionMapper::toDTO);

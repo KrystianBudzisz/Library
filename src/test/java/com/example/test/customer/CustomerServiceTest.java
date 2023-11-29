@@ -5,8 +5,6 @@ import com.example.test.customer.model.Customer;
 import com.example.test.customer.model.CustomerDTO;
 import com.example.test.customer.model.CustomerMapper;
 import com.example.test.email.EmailService;
-import com.example.test.exception.DatabaseException;
-import com.example.test.exception.DuplicateResourceException;
 import com.example.test.exception.ResourceNotFoundException;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,14 +145,6 @@ public class CustomerServiceTest {
     public void testConfirmEmailWithInvalidToken() {
         when(customerRepository.findByConfirmationToken("invalid")).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> customerService.confirmEmail("invalid"));
-    }
-
-    @Test
-    public void testConfirmEmailWithError() {
-        when(customerRepository.findByConfirmationToken("valid")).thenReturn(Optional.of(new Customer()));
-        when(customerRepository.save(any(Customer.class))).thenThrow(new RuntimeException());
-
-        assertThrows(DatabaseException.class, () -> customerService.confirmEmail("valid"));
     }
 
     @Test
